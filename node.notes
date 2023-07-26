@@ -1,0 +1,23 @@
+
+=================================JWT====================
+
+
+Jwt made up of three parts
+1. Hearder---> Metadat about token itself
+2.Payload--->is the code we can encode into the token
+upper parts are plain text that wil jus encoded not encrypted anyone can decode them or read them so hum yha koi sensitive data ni store kar skte
+3.Verify Signature-->ye header+payload +secret jo server pe hai ko store krke bna hai 
+
+Header+Payload=======> JWT---> jo client ko jaata hai
+HEader+payload+secret======>Test signature(verify karte hai)
+
+
+
+=============================findById=============================
+custom validators hmaare update pe kaam ni krte isliye hum har jagah save use krte hai like user.save()
+and pre(save) middlewares hai schema me vo bhi work ni krenge
+
+
+======================populate=====================
+
+ye query pe lgta hai aur jo reference store hai db me uska data humaari query ke saath add krke return krta hai
