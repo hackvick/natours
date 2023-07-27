@@ -21,3 +21,6 @@ and pre(save) middlewares hai schema me vo bhi work ni krenge
 ======================populate=====================
 
 ye query pe lgta hai aur jo reference store hai db me uska data humaari query ke saath add krke return krta hai
+
+==================indexess=======================
+Ye hmaari read performance badhaate hai like mongo ko hmaari query scan krne ke liye kam documents scan krne pdenge

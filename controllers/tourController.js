@@ -1,5 +1,4 @@
 const { Tour } = require('../models/tourModel');
-const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const handleFactory = require('./handlerFactory');
@@ -42,61 +41,61 @@ exports.aliasTopTours = async (req, res, next) => {
 };
 
 // exports.getAllTours = catchAsync(async (req, res, next) => {
-  // BUILD QUERY
+// BUILD QUERY
 
-  // // 1A) Filtering
-  // const queryObj = { ...req.query };
-  // const excludedFields = ['page', 'sort', 'limit', 'fields'];
+// // 1A) Filtering
+// const queryObj = { ...req.query };
+// const excludedFields = ['page', 'sort', 'limit', 'fields'];
 
-  // excludedFields.forEach(el => delete queryObj[el]);
+// excludedFields.forEach(el => delete queryObj[el]);
 
-  // // 2A) Advanced Filtering
-  // let queryStr = JSON.stringify(queryObj);
+// // 2A) Advanced Filtering
+// let queryStr = JSON.stringify(queryObj);
 
-  // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-  // console.log(JSON.parse(queryStr));
+// queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+// console.log(JSON.parse(queryStr));
 
-  // let query = Tour.find(JSON.parse(queryStr));
+// let query = Tour.find(JSON.parse(queryStr));
 
-  // //2) SORT
-  // // aise simply assending me sort karega if descending me karvana hai toh - lga do
-  // if (req.query.sort) {
-  //   // agr hum ek field se sort karne lge aur vo do baar ho toh ye dusri field se sort krdega unme se
-  //  const sortBy = req.query.sort.split(",").join(" ")
-  //  query = query.sort(sortBy);
-  // }else{
-  //   // Default Sort
-  //   query = query.sort('-createdAt');
+// //2) SORT
+// // aise simply assending me sort karega if descending me karvana hai toh - lga do
+// if (req.query.sort) {
+//   // agr hum ek field se sort karne lge aur vo do baar ho toh ye dusri field se sort krdega unme se
+//  const sortBy = req.query.sort.split(",").join(" ")
+//  query = query.sort(sortBy);
+// }else{
+//   // Default Sort
+//   query = query.sort('-createdAt');
 
-  // }
-  // //3) Field Limiting
+// }
+// //3) Field Limiting
 
-  // if(req.query.fields){
-  //   const fields = req.query.fields.split(",").join(" ")
-  //   query = query.select(fields)
-  // }else{
-  //   // default  limiting
-  //   // - lga ke exclude kr  skte hai
-  //   query=query.select("-__v");
-  // }
+// if(req.query.fields){
+//   const fields = req.query.fields.split(",").join(" ")
+//   query = query.select(fields)
+// }else{
+//   // default  limiting
+//   // - lga ke exclude kr  skte hai
+//   query=query.select("-__v");
+// }
 
-  // // PAGINATION
+// // PAGINATION
 
-  // const page = req.query.page * 1 || 1
-  // const limit = req.query.limit * 1 || 1
-  // const skip = (page-1)*limit
+// const page = req.query.page * 1 || 1
+// const limit = req.query.limit * 1 || 1
+// const skip = (page-1)*limit
 
-  // query=query.skip(skip).limit(limit)
+// query=query.skip(skip).limit(limit)
 
-  // if(req.query.page){
-  //   const numTours = await Tour.countDocuments()
-  //   if(skip>=numTours) throw new Error("This page doesn't exist")
-  // }
+// if(req.query.page){
+//   const numTours = await Tour.countDocuments()
+//   if(skip>=numTours) throw new Error("This page doesn't exist")
+// }
 
-  // Another way of setting the query
-  // const tours = await Tour.find().where("duration").equals(5).where("difficulty").equals("easy")
+// Another way of setting the query
+// const tours = await Tour.find().where("duration").equals(5).where("difficulty").equals("easy")
 
-  // EXEXUTE QUERY
+// EXEXUTE QUERY
 
 //   const features = new ApiFeatures(Tour.find(), req.query)
 //     .filter()
@@ -133,10 +132,10 @@ exports.aliasTopTours = async (req, res, next) => {
 //     }
 //   });
 // });
-exports.getAllTours = handleFactory.getAll(Tour)
-exports.getTour = handleFactory.getOne(Tour,{path:"reviews"})
-exports.createTour =handleFactory.createOne(Tour)
-exports.updateTour = handleFactory.updateOne(Tour)
+exports.getAllTours = handleFactory.getAll(Tour);
+exports.getTour = handleFactory.getOne(Tour, { path: 'reviews' });
+exports.createTour = handleFactory.createOne(Tour);
+exports.updateTour = handleFactory.updateOne(Tour);
 exports.deleteTour = handleFactory.deleteOne(Tour);
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
@@ -175,7 +174,7 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getMonthlyPlan = async (req, res, next) => {
+exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   const year = req.params.year * 1;
 
   const plan = await Tour.aggregate([
@@ -225,4 +224,80 @@ exports.getMonthlyPlan = async (req, res, next) => {
   //     message: error
   //   });
   // }
-};
+});
+
+// router.route('/tours-within/:distance/center/:latlng/unit/:unit',tourController.getToursWithin)
+
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  // (3963.2) <= Radius of the earth in miles
+  const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'Please provide latitude and logitude in the format lat,long',
+        400
+      )
+    );
+  }
+
+  // geo query aise hi dete hai
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } } //hmesha lng jaayega pehle isme
+  });
+  console.log('vicky');
+  console.log(tours, 'tours');
+
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: {
+      data: tours
+    }
+  });
+});
+
+exports.getDistances = catchAsync(async(req,res,next)=>{
+  const {  latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+const multiplier = unit=== 'mi'? 0.000621371 : 0.001
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'Please provide latitude and logitude in the format lat,long',
+        400
+      )
+    );
+  }
+
+  const distances = await Tour.aggregate([
+    {
+      // geonear hmesah pipeline me pehle number pe hona chahiye
+      $geoNear:{
+        near: {
+          type:'Point',
+          coordinates:[lng*1,lat*1]
+        },
+        distanceField:'distance',
+        distanceMultiplier:multiplier       //geoNear property to multiply distance
+      },
+      
+    },
+    {
+      $project:{
+        _id:0,
+        name:1,
+        distance:1
+      }
+    }
+  ])
+  res.status(200).json({
+    status: 'success',
+    data: {
+      data: distances
+    }
+  });  
+})

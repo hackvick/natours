@@ -75,7 +75,6 @@ userSchema.pre(/^find/, function(next) {
   next();
 });
 
-
 // Below we are creating instance method so that will be available on all the user models
 userSchema.methods.correctPassword = async function(
   candidatePassword,

@@ -7,8 +7,8 @@ const tourSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      unique: true,
       required: [true, 'A tour must have a name'],
+      unique: true,
       trim: true, //It will remove the whitespace from the begining and the end of the string
       maxlength: [
         40,
@@ -41,7 +41,8 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
-      max: [5, 'Rating must be less than 5.0']
+      max: [5, 'Rating must be less than 5.0'],
+      set: val => val.toFixed(1)
     },
     ratingsQuantity: {
       type: Number,
@@ -88,28 +89,24 @@ const tourSchema = new mongoose.Schema(
       default: false
     },
     startLocation: {
-      // GEOJSON
+      // GeoJSON
       type: {
         type: String,
-        default: 'Point'
-        // enum: ['point']
+        default: 'Point',
+        enum: ['Point']
       },
-
-      cordinates: [Number],
+      coordinates: [Number],
       address: String,
       description: String
     },
-
     locations: [
       {
-        // GEOJSON
         type: {
           type: String,
-          default: 'Point'
-          // enum: ['point']
+          default: 'Point',
+          enum: ['Point']
         },
-
-        cordinates: [Number],
+        coordinates: [Number],
         address: String,
         description: String,
         day: Number
@@ -131,6 +128,11 @@ const tourSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
+
+// jo field jyada queried hoti hai uski indexing krdo
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
+tourSchema.index({ startLocation: '2dsphere' });
 
 tourSchema.virtual('durationWeeks').get(function() {
   //virtual property jo yha pe calculate hogi jisko db me ni rkhte like jo easily pdi hui value se nikl jaaye(hamesha outpu me aayegi)
@@ -189,11 +191,11 @@ tourSchema.post(/^find/, function(docs, next) {
 // baat ye hai ke isse hum aggregation se pehle use krte hai jaise humne ek secret tour bnaya hai vo aggregation me aara tha
 // isliye humne use yha pe define krdia ke bhai beech me na aaio
 
-tourSchema.pre('aggregate', function(next) {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+// tourSchema.pre('aggregate', function(next) {
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
 
-  this.start = Date.now();
-  next();
-});
+//   this.start = Date.now();
+//   next();
+// });
 
 exports.Tour = mongoose.model('Tour', tourSchema);
