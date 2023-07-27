@@ -4,16 +4,11 @@ const handleFactory = require('./handlerFactory');
 
 const { User } = require('../models/userModel');
 
-exports.getAllUsers = catchAsync(async (req, res) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: 'success',
-    result: users.length,
-    data: {
-      users
-    }
-  });
-});
+
+exports.getMe = (req,res,next)=>{
+  req.params.id = req.user.id
+  next()
+}
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -40,7 +35,7 @@ exports.updateMe = async (req, res, next) => {
       )
     );
   }
-
+  
   // Filter kia hai unwanted fields name agar koi role daalde body me toh kya krenge
   const filteredBody = filterObj(req.body, 'name', 'email');
   const updateUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
@@ -62,7 +57,8 @@ exports.createUser = (req, res) => {
   });
 };
 
-// Do not update password with it
+exports.getAllUsers = handleFactory.getAll(User)
 exports.getUser = handleFactory.getOne(User)
+// Do not update password with it
 exports.deleteUser = handleFactory.deleteOne(User)
 exports.updateUser = handleFactory.updateOne(User)

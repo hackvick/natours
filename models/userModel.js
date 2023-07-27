@@ -60,12 +60,6 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// query middleware
-userSchema.pre(/^find/, function(next) {
-  this.find({ active: { $ne: false } });
-  next();
-});
-
 userSchema.pre('save', async function(next) {
   // checking if password is not modified or the document is newly saved than not hitting this middleware
   if (!this.isModified('password') || this.isNew) return next();
@@ -74,6 +68,13 @@ userSchema.pre('save', async function(next) {
 
   next();
 });
+
+// query middleware
+userSchema.pre(/^find/, function(next) {
+  this.find({ active: { $ne: false } });
+  next();
+});
+
 
 // Below we are creating instance method so that will be available on all the user models
 userSchema.methods.correctPassword = async function(
