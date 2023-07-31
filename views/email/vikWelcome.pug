@@ -1,0 +1,27 @@
+doctype html
+head
+  meta(charset='UTF-8')
+  meta(name='viewport' content='width=device-width, initial-scale=1.0')
+  title Welcome to Our Website
+div(style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc;')
+  h1(style='text-align: center; color: #007BFF;') Welcome to Our Website!
+  p Dear [#{firstName}&apos;s Name],
+  p
+    | Thank you for signing up on our website. We are excited to have you as a member of our community!
+  p
+    | This email is to confirm that your registration is successful. Below are your account details:
+  ul
+    li
+      strong Username:
+      |  #{firstName}
+    li
+      strong Email:
+      |  #{email}
+    // Add any other relevant account information here
+  p
+    | If you have any questions or need assistance, please don&apos;t hesitate to contact our support team.
+  p Again, welcome aboard! We look forward to seeing you around our website.
+  p
+    | Best regards,
+    br
+    |     Natours

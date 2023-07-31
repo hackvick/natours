@@ -1,5 +1,7 @@
 const { Tour } = require('../models/tourModel');
+const multer = require('multer');
 const catchAsync = require('../utils/catchAsync');
+const sharp = require('sharp');
 const AppError = require('../utils/appError');
 const handleFactory = require('./handlerFactory');
 // =============================
@@ -260,10 +262,10 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getDistances = catchAsync(async(req,res,next)=>{
-  const {  latlng, unit } = req.params;
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, unit } = req.params;
   const [lat, lng] = latlng.split(',');
-const multiplier = unit=== 'mi'? 0.000621371 : 0.001
+  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
   if (!lat || !lng) {
     next(
       new AppError(
@@ -276,28 +278,83 @@ const multiplier = unit=== 'mi'? 0.000621371 : 0.001
   const distances = await Tour.aggregate([
     {
       // geonear hmesah pipeline me pehle number pe hona chahiye
-      $geoNear:{
+      $geoNear: {
         near: {
-          type:'Point',
-          coordinates:[lng*1,lat*1]
+          type: 'Point',
+          coordinates: [lng * 1, lat * 1]
         },
-        distanceField:'distance',
-        distanceMultiplier:multiplier       //geoNear property to multiply distance
-      },
-      
+        distanceField: 'distance',
+        distanceMultiplier: multiplier //geoNear property to multiply distance
+      }
     },
     {
-      $project:{
-        _id:0,
-        name:1,
-        distance:1
+      $project: {
+        _id: 0,
+        name: 1,
+        distance: 1
       }
     }
-  ])
+  ]);
   res.status(200).json({
     status: 'success',
     data: {
       data: distances
     }
-  });  
-})
+  });
+});
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image !Please upload only images', 400), false);
+  }
+};
+const mulerStorage = multer.memoryStorage();
+
+const upload = multer({
+  storage: mulerStorage,
+  fileFilter: multerFilter
+});
+
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 }
+]);
+// agar image cover naa hota only multiple images hoti tab hum neeche
+// exports.uploadTourImages = upload.array('images',3)
+
+// jab single ho upload.single() ,,,, jabmultiple ho upload.array(),,,, jab mix ho tab upload.fields()
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  // console.log(req.files);
+  console.log(
+    'hiiiiiiiiiiiiiiiiii????????????????????????????????<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>'
+  );
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  // 1) cover image
+  req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer) //image processing
+    .resize(2000, 1333) //resizes it to square
+    .toFormat('jpeg') //formatted to jpeg
+    .jpeg({ quality: 90 }) //with aquality of 90 %
+    .toFile(`public/img/tours/${req.body.imageCover}`); //write our file into our file system
+  console.log(req.body.imageCover, 'req.body.imageCover');
+  // 2) Images
+  req.body.images = [];
+  // neeche hum map ki jagah foreach lgaare the jisse loop me await(sharp) vaala kaam hora tha jo new line pe jaane se na rokta
+  // isliye hum map use krenge jo array of promises return krega aur usse variable me store krvaane ke bjaaye direct promise.all use krenge
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+      await sharp(file.buffer)
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${filename}`);
+      req.body.images.push(filename);
+    })
+  );
+  next();
+});
